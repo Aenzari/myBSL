@@ -1,0 +1,187 @@
+include("lib/socket.bzg");
+
+if (socket_init() < 0) {
+    print("[FATAL] Socket subsystem failed to initialize.\n");
+} else {
+    print("[OK] Socket subsystem initialized.\n");
+}
+
+var server = socket_create();
+if (server < 0) {
+    print("[FATAL] Socket creation failed.\n");
+}
+
+if (socket_bind(server, 0, 8080) < 0) {
+    print("[FATAL] Socket bind on port 8080 failed.\n");
+} else {
+    print("[OK] Bound to 0.0.0.0:8080\n");
+}
+
+if (socket_listen(server, 5) < 0) {
+    print("[FATAL] socket_listen() failed.\n");
+} else {
+    print("========================================\n");
+    print(" BSL HTTP Server running on port 8080\n");
+    print(" Try:  http://localhost:8080/\n");
+    print("       http://localhost:8080/about\n");
+    print("       http://localhost:8080/anything (404)\n");
+    print("========================================\n");
+}
+
+while (1) {
+
+    var client = socket_accept(server);
+    print("[CONNECT] Client connected.\n");
+
+    var data = socket_read(client, 1024);
+
+    if (sizeof(data) >= 0) {
+
+        var match = regex("/.* HTTP/1.1", data);
+        var path  = substr(match, 0, sizeof(match) - 9);
+
+        print("[REQUEST] Path requested: " + path + "\n");
+
+        var STATUS = "200 OK";
+        var BODY   = "";
+
+        if (path == "/" || path == "/HTTP") {
+
+            STATUS = "200 OK";
+            BODY =  "<!DOCTYPE html>"
+                  + "<html lang=\"en\">"
+                  + "<head>"
+                  +   "<meta charset=\"UTF-8\">"
+                  +   "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+                  +   "<title>BSL HTTP Server &mdash; Home</title>"
+                  +   "<style>"
+                  +     "body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"
+                  +     "margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;"
+                  +     "background:linear-gradient(135deg,#0f172a,#1e293b);color:#f1f5f9;}"
+                  +     ".card{max-width:640px;padding:2.5rem 3rem;background:#0f172a;border:1px solid #334155;"
+                  +     "border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.35);}"
+                  +     ".badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:999px;"
+                  +     "background:#22c55e;color:#052e16;font-weight:600;font-size:0.75rem;letter-spacing:0.05em;"
+                  +     "text-transform:uppercase;margin-bottom:1rem;}"
+                  +     "h1{margin:0 0 0.5rem 0;font-size:2rem;color:#38bdf8;}"
+                  +     "p{line-height:1.6;color:#cbd5e1;}"
+                  +     "code{background:#1e293b;padding:0.15rem 0.4rem;border-radius:6px;color:#facc15;}"
+                  +     "nav a{color:#38bdf8;text-decoration:none;margin-right:1rem;font-weight:600;}"
+                  +     "nav a:hover{text-decoration:underline;}"
+                  +     "footer{margin-top:1.5rem;font-size:0.8rem;color:#64748b;}"
+                  +   "</style>"
+                  + "</head>"
+                  + "<body>"
+                  +   "<div class=\"card\">"
+                  +     "<span class=\"badge\">Server Online</span>"
+                  +     "<h1>Welcome to the BSL HTTP Server</h1>"
+                  +     "<p>This landing page is being served by a low-level HTTP/1.1 server "
+                  +     "written from scratch in the <strong>Bonezegei Scripting Language (BSL)</strong>, "
+                  +     "using raw TCP sockets via <code>lib/socket.bzg</code>.</p>"
+                  +     "<nav>"
+                  +       "<a href=\"/\">Home</a>"
+                  +       "<a href=\"/about\">About</a>"
+                  +       "<a href=\"/undefined-route\">Trigger 404</a>"
+                  +     "</nav>"
+                  +     "<footer>Listening on port <code>8080</code> &middot; HTTP/1.1 &middot; Connection: close</footer>"
+                  +   "</div>"
+                  + "</body>"
+                  + "</html>";
+        }
+
+        else if (path == "/about") {
+
+            STATUS = "200 OK";
+            BODY =  "<!DOCTYPE html>"
+                  + "<html lang=\"en\">"
+                  + "<head>"
+                  +   "<meta charset=\"UTF-8\">"
+                  +   "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+                  +   "<title>BSL HTTP Server &mdash; About</title>"
+                  +   "<style>"
+                  +     "body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"
+                  +     "margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;"
+                  +     "background:#f5f5f7;color:#1d1d1f;}"
+                  +     ".container{max-width:680px;padding:2.5rem 3rem;background:#ffffff;border-radius:14px;"
+                  +     "box-shadow:0 8px 24px rgba(0,0,0,0.08);}"
+                  +     "h1{font-size:1.75rem;margin-bottom:0.25rem;color:#0066cc;}"
+                  +     "h2{font-size:1.05rem;color:#6e6e73;font-weight:500;margin-top:0;}"
+                  +     "table{width:100%;border-collapse:collapse;margin-top:1.5rem;}"
+                  +     "td{padding:0.5rem 0;border-bottom:1px solid #e5e5ea;vertical-align:top;}"
+                  +     "td:first-child{width:35%;font-weight:600;color:#333;}"
+                  +     "p{line-height:1.6;}"
+                  +     "a{color:#0066cc;text-decoration:none;font-weight:600;}"
+                  +     "a:hover{text-decoration:underline;}"
+                  +   "</style>"
+                  + "</head>"
+                  + "<body>"
+                  +   "<div class=\"container\">"
+                  +     "<h1>About This Project</h1>"
+                  +     "<h2>my-bsl-http-server</h2>"
+                  +     "<p>A university laboratory activity demonstrating how to build a "
+                  +     "low-level HTTP/1.1 server entirely from raw TCP sockets, without "
+                  +     "relying on any built-in web framework, using the "
+                  +     "<strong>Bonezegei Scripting Language (BSL)</strong> and its "
+                  +     "<code>lib/socket.bzg</code> networking library.</p>"
+                  +     "<table>"
+                  +       "<tr><td>Developer</td><td>[Full Name]</td></tr>"
+                  +       "<tr><td>Language</td><td>Bonezegei Scripting Language (BSL)</td></tr>"
+                  +       "<tr><td>Library</td><td>BSL_Socket (lib/socket.bzg)</td></tr>"
+                  +       "<tr><td>Port</td><td>8080</td></tr>"
+                  +       "<tr><td>Protocol</td><td>HTTP/1.1 (raw, hand-built)</td></tr>"
+                  +       "<tr><td>Routes</td><td>/, /HTTP, /about, 404 fallback</td></tr>"
+                  +     "</table>"
+                  +     "<p><a href=\"/\">&larr; Back to Home</a></p>"
+                  +   "</div>"
+                  + "</body>"
+                  + "</html>";
+        }
+
+        else {
+
+            STATUS = "404 Not Found";
+            BODY =  "<!DOCTYPE html>"
+                  + "<html lang=\"en\">"
+                  + "<head>"
+                  +   "<meta charset=\"UTF-8\">"
+                  +   "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+                  +   "<title>404 Not Found</title>"
+                  +   "<style>"
+                  +     "body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"
+                  +     "margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;"
+                  +     "background:#1a1a1a;color:#f5f5f5;text-align:center;}"
+                  +     ".box{padding:2.5rem 3rem;}"
+                  +     "h1{font-size:5rem;margin:0;color:#e63946;}"
+                  +     "h2{font-size:1.25rem;font-weight:500;color:#f5f5f5;margin:0.5rem 0 1rem 0;}"
+                  +     "p{color:#a3a3a3;line-height:1.6;}"
+                  +     "a{color:#38bdf8;text-decoration:none;font-weight:600;}"
+                  +     "a:hover{text-decoration:underline;}"
+                  +   "</style>"
+                  + "</head>"
+                  + "<body>"
+                  +   "<div class=\"box\">"
+                  +     "<h1>404</h1>"
+                  +     "<h2>Not Found</h2>"
+                  +     "<p>The route you requested does not exist on this BSL HTTP server.</p>"
+                  +     "<p><a href=\"/\">&larr; Return to Home</a></p>"
+                  +   "</div>"
+                  + "</body>"
+                  + "</html>";
+        }
+
+        var HTTP =  "HTTP/1.1 " + STATUS + "\r\n"
+                  + "Content-Type: text/html\r\n"
+                  + "Content-Length: " + sizeof(BODY) + "\r\n"
+                  + "Connection: close\r\n"
+                  + "\r\n";
+
+        socket_write(client, HTTP + BODY, sizeof(HTTP + BODY));
+
+        print("[RESPONSE] " + STATUS + " sent for " + path + "\n");
+    }
+
+    socket_close(client);
+    gc(); 
+}
+
+socket_cleanup();
